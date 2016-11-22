@@ -38,11 +38,13 @@ class BullsAndCowsPlayer(object):
         else:
             logging.debug("Detected all digits!")
             logging.debug("Number of unique digits: %s"%self.uniqueDigits)
-            for key in self.calculatedPossibles:  #experimental
-                if self.calculatedPossibles[key][0]:
-                    guess = self.calculatedPossibles[key][0]
-                    self.guessSkeleton = key
-                    break
+            _ , self.guessSkeleton = max((len(self.calculatedPossibles[key]),key) for key in self.calculatedPossibles)
+            guess = self.calculatedPossibles[self.guessSkeleton][0]
+            # for key in self.calculatedPossibles:  #experimental
+            #     if self.calculatedPossibles[key][0]:
+            #         guess = self.calculatedPossibles[key][0]
+            #         self.guessSkeleton = key
+            #         break
         self.lastGuess = guess
         return self.lastGuess
 
@@ -141,21 +143,21 @@ class BullsAndCowsPlayer(object):
                 del self.calculatedPossibles[self.guessSkeleton]
             except KeyError:
                 logging.error("Cant delete key %s"%self.guessSkeleton)
-        elif sum(c.isdigit() for c in self.guessSkeleton) <= result[0] > 4:    #  TODO: NEED TO VERIFY THIS LOGIC!
-            self.calculatedPossibles = self.calculatedPossibles.pop(self.guessSkeleton,None)
+        # elif sum(c.isdigit() for c in self.guessSkeleton) <= result[0]:    #  TODO: NEED TO VERIFY THIS LOGIC!
+        #     logging.debug("Found more bulls than are in skeleton! Must update all keys!")
+        #     tempDict={}
+        #     tempDict[self.guessSkeleton] = self.calculatedPossibles.pop(self.guessSkeleton,None)
+        #     self.calculatedPossibles = tempDict
 
-        for key in self.calculatedPossibles:
-            for number in self.calculatedPossibles[key]:
-                pass
-
+        self.calculatedPossibles = self._mergeMaskDicts(newPossibles, combine=False)
         return self.calculatedPossibles
 
-    def _mergeMaskDicts(self, newMaskedDict):
+    def _mergeMaskDicts(self, newMaskedDict, combine=True):
         def getRelevantSubDict(word, maskedDict):
             returnDict = {}
             for key in maskedDict:
-                for index in [i for i, ltr in enumerate(word) if ltr.isdigit()]:
-                    if key[index]!='X':
+                for index,ltr in [(i,ltr) for i, ltr in enumerate(word) if ltr.isdigit()]:
+                    if key[index]!=ltr and key[index]!='X':
                         break
                 else:
                     returnDict[key]=maskedDict[key]
@@ -166,10 +168,13 @@ class BullsAndCowsPlayer(object):
             logging.debug("Combining Lists %s and %s"%(sourceList,compareList))
             for pair in itertools.product(sourceList, compareList):
                 temp=""
-                for i in range(0,4):
+                for i in range(0,4):   # Block can be improved
                     if pair[0][i]!='X' and pair[1][i]!='X':
-                        break
-                    if pair[0][i]=='X' and pair[1][i]=='X':
+                        if pair[0][i]!=pair[1][i]:
+                            break
+                        else:
+                            temp=temp+pair[0][i]
+                    elif pair[0][i]=='X' and pair[1][i]=='X':
                         temp = temp+'X'
                     elif pair[0][i]=='X':
                         temp = temp + pair[1][i]
@@ -180,6 +185,22 @@ class BullsAndCowsPlayer(object):
             logging.debug("combined list is %s"%resultList)
             return resultList
 
+        def filterLists(sourceList, compareList):
+            resultList = []
+            logging.debug("Filtering List %s with %s"%(sourceList,compareList))
+            for number in sourceList:
+                for qualifier in compareList:
+                    for i in range(0,4):
+                        if number[i]!=qualifier[i]:
+                            if qualifier[i]!='X':
+                                break
+                    else:
+                        resultList.append(number)
+                        break
+            logging.debug("Filtered List: %s"%resultList)
+            return resultList
+
+
         resultMaskedDict={}
         for key in self.calculatedPossibles:
             relevantSubDict = getRelevantSubDict(key, newMaskedDict)
@@ -188,10 +209,18 @@ class BullsAndCowsPlayer(object):
                 newkey = key
                 for index,ltr in [(i,ltr) for i, ltr in enumerate(relevantKey) if ltr.isdigit()]:
                     newkey = newkey[:index] + ltr + newkey[index+1:]
-                if not newkey in resultMaskedDict:
-                    resultMaskedDict[newkey] = []
-                logging.debug("Combination key for %s and %s is %s"%(key, relevantKey, newkey))
-                resultMaskedDict[newkey].extend(combineLists(self.calculatedPossibles[key], relevantSubDict[relevantKey]))
+                if combine:
+                    tempList = combineLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
+                else:
+                    tempList = filterLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
+                    if self.lastGuess in tempList:
+                        tempList.remove(self.lastGuess)
+                if tempList:
+                    if not newkey in resultMaskedDict:
+                        resultMaskedDict[newkey] = []
+                    logging.debug("Combination key for %s and %s is %s"%(key, relevantKey, newkey))
+                    resultMaskedDict[newkey].extend(tempList)
+                    # resultMaskedDict[newkey] = list(set(resultMaskedDict[newkey]))  # TODO : remove crappy way to remove duplicates
 
         if not self.calculatedPossibles:
             return newMaskedDict
