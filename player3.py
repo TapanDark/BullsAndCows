@@ -137,22 +137,16 @@ class BullsAndCowsPlayer(object):
         logging.debug("result bulls %s"%result[0])
         if self.guessSkeleton.count('B') > result[0]:
             logging.debug("deleting key %s"%self.guessSkeleton)
-            keysToRemove.append(self.guessSkeleton)
-        if self.guessSkeleton.count('B') + result[0] > 4:
-            mustBeBulls = self.guessSkeleton.count('B') + result[0] -4
-            for key in self.calculatedPossibles:
-                commonBullCount = 0
-                for index in range(0,4):
-                    if self.guessSkeleton[index] == 'B' and key[index]=='B':
-                        commonBullCount +=1
-                if commonBullCount<mustBeBulls:
-                    keysToRemove.append(key)
-                    
-        for key in keysToRemove:
             try:
-                del self.calculatedPossibles[key]
+                del self.calculatedPossibles[self.guessSkeleton]
             except KeyError:
-                logging.error("Cant delete key %s"%key)
+                logging.error("Cant delete key %s"%self.guessSkeleton)
+        elif self.guessSkeleton.count('B') <= result[0] > 4:    #  TODO: NEED TO VERIFY THIS LOGIC!
+            self.calculatedPossibles = self.calculatedPossibles.pop(self.guessSkeleton,None)
+
+        for key in self.calculatedPossibles:
+            for number in self.calculatedPossibles[key]:
+                pass
 
         return self.calculatedPossibles
 
