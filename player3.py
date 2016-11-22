@@ -83,7 +83,7 @@ class BullsAndCowsPlayer(object):
 
     def _updatePossibles(self,result,guess):
         def getBullLocations(remainderPositions):
-            result = 'BBBB'
+            result = guess
             for position in remainderPositions:
                 result = result[:position] + 'X' + result[position+1:]
             return result
@@ -133,15 +133,15 @@ class BullsAndCowsPlayer(object):
     # TODO: IMPLEMENT THIS
     def _filterMaskDict(self, newPossibles, result):
         keysToRemove = []
-        logging.debug("Guess skeleton bulls: %s"%self.guessSkeleton.count('B'))
+        logging.debug("Guess skeleton bulls: %s"%sum(c.isdigit() for c in self.guessSkeleton))
         logging.debug("result bulls %s"%result[0])
-        if self.guessSkeleton.count('B') > result[0]:
+        if sum(c.isdigit() for c in self.guessSkeleton) > result[0]:
             logging.debug("deleting key %s"%self.guessSkeleton)
             try:
                 del self.calculatedPossibles[self.guessSkeleton]
             except KeyError:
                 logging.error("Cant delete key %s"%self.guessSkeleton)
-        elif self.guessSkeleton.count('B') <= result[0] > 4:    #  TODO: NEED TO VERIFY THIS LOGIC!
+        elif sum(c.isdigit() for c in self.guessSkeleton) <= result[0] > 4:    #  TODO: NEED TO VERIFY THIS LOGIC!
             self.calculatedPossibles = self.calculatedPossibles.pop(self.guessSkeleton,None)
 
         for key in self.calculatedPossibles:
@@ -154,7 +154,7 @@ class BullsAndCowsPlayer(object):
         def getRelevantSubDict(word, maskedDict):
             returnDict = {}
             for key in maskedDict:
-                for index in [i for i, ltr in enumerate(word) if ltr == 'B']:
+                for index in [i for i, ltr in enumerate(word) if ltr.isdigit()]:
                     if key[index]!='X':
                         break
                 else:
@@ -186,8 +186,8 @@ class BullsAndCowsPlayer(object):
             logging.debug("relavant subdict for key %s is %s"%(key,relevantSubDict))
             for relevantKey in relevantSubDict:
                 newkey = key
-                for index in [i for i, ltr in enumerate(relevantKey) if ltr == 'B']:
-                    newkey = newkey[:index] + 'B' + newkey[index+1:]
+                for index,ltr in [(i,ltr) for i, ltr in enumerate(relevantKey) if ltr.isdigit()]:
+                    newkey = newkey[:index] + ltr + newkey[index+1:]
                 if not newkey in resultMaskedDict:
                     resultMaskedDict[newkey] = []
                 logging.debug("Combination key for %s and %s is %s"%(key, relevantKey, newkey))
