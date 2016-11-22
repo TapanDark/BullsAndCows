@@ -43,7 +43,7 @@ class BullsAndCowsPlayer(object):
                     guess = self.calculatedPossibles[key][0]
                     self.guessSkeleton = key
                     break
-        self.LastGuess = guess
+        self.lastGuess = guess
         return self.lastGuess
 
     def processResult(self, result, guess=None):
@@ -60,14 +60,13 @@ class BullsAndCowsPlayer(object):
                 self.foundAllDigits = True
             elif self.triedAllDigits:
                 self.repeatedDigits=True
-                self.foundAllDigits=True
                 for key in self.calculatedPossibles:  #experimental
                     if self.calculatedPossibles[key][0]:
                         self.guessSkeleton = self.calculatedPossibles[key][0]
                         break
                 logging.debug("Repeated Digits Detected!")
         else:
-            self.calculatedPossibles = self._filterMaskDict(newPossibles)
+            self.calculatedPossibles = self._filterMaskDict(newPossibles,result)
 
         self.presentDigitsSet=set()
         # TODO: try to remove ugly, inefficient, nested loop
@@ -132,11 +131,30 @@ class BullsAndCowsPlayer(object):
         return maskedPossibles
 
     # TODO: IMPLEMENT THIS
-    def _filterMaskDict(self, newPossibles):
-        # Notes:
-        # if key from new possibles is present in calculated, only keep those entries for that key that fit in the new
-        # 
-        return self.calculatedPossibles()
+    def _filterMaskDict(self, newPossibles, result):
+        keysToRemove = []
+        logging.debug("Guess skeleton bulls: %s"%self.guessSkeleton.count('B'))
+        logging.debug("result bulls %s"%result[0])
+        if self.guessSkeleton.count('B') > result[0]:
+            logging.debug("deleting key %s"%self.guessSkeleton)
+            keysToRemove.append(self.guessSkeleton)
+        if self.guessSkeleton.count('B') + result[0] > 4:
+            mustBeBulls = self.guessSkeleton.count('B') + result[0] -4
+            for key in self.calculatedPossibles:
+                commonBullCount = 0
+                for index in range(0,4):
+                    if self.guessSkeleton[index] == 'B' and key[index]=='B':
+                        commonBullCount +=1
+                if commonBullCount<mustBeBulls:
+                    keysToRemove.append(key)
+                    
+        for key in keysToRemove:
+            try:
+                del self.calculatedPossibles[key]
+            except KeyError:
+                logging.error("Cant delete key %s"%key)
+
+        return self.calculatedPossibles
 
     def _mergeMaskDicts(self, newMaskedDict):
         def getRelevantSubDict(word, maskedDict):
