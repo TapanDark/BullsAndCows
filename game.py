@@ -39,7 +39,7 @@ class BullsAndCowsGame(object):
                         cows+=1
                         remainList.remove(number)
             if bulls == 4:
-                print("You win! Answer is %s. Attempts %s"%(self.secret,self.attempts))
+                print("You win! Answer is %s. Attempts %s"%(self.secret,self.attempts+1))
                 return (bulls,cows)
             else:
                 print("Bulls %s, Cows %s"%(bulls,cows))
