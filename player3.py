@@ -34,18 +34,16 @@ class BullsAndCowsPlayer(object):
                 except StopIteration as e:
                     logging.debug("Out of unguessed digits!")
                     self.triedAllDigits=True
-                    guess = guess.replace('X','9', 4)
+                    cycler = itertools.cycle('90')
+                    while 'X' in guess:
+                        guess = guess.replace('X',next(cycler), 1)
         else:
             logging.debug("Detected all digits!")
             logging.debug("Number of unique digits: %s"%self.uniqueDigits)
-            _ , self.guessSkeleton = max((len(self.calculatedPossibles[key]),key) for key in self.calculatedPossibles)
+            _ , self.guessSkeleton = max((len(self.calculatedPossibles[key]),key) for key in self.calculatedPossibles)  #  TODO: UPDATE THIS, PICK FROM LIST WHERE KEY HAS MAX BULLS
             guess = self.calculatedPossibles[self.guessSkeleton][0]
-            # for key in self.calculatedPossibles:  #experimental
-            #     if self.calculatedPossibles[key][0]:
-            #         guess = self.calculatedPossibles[key][0]
-            #         self.guessSkeleton = key
-            #         break
         self.lastGuess = guess
+        print("Guess: %s"%self.lastGuess)
         return self.lastGuess
 
     def processResult(self, result, guess=None):
@@ -213,8 +211,13 @@ class BullsAndCowsPlayer(object):
                     tempList = combineLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
                 else:
                     tempList = filterLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
-                    if self.lastGuess in tempList:
-                        tempList.remove(self.lastGuess)
+                    while(True):
+                        try:
+                            logging.debug("Removing %s from %s"%(self.lastGuess,tempList))
+                            tempList.remove(self.lastGuess)
+                        except ValueError as e:
+                            logging.debug("Last guess %s not in list %s"%(self.lastGuess,tempList))
+                            break
                 if tempList:
                     if not newkey in resultMaskedDict:
                         resultMaskedDict[newkey] = []
