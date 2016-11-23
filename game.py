@@ -1,20 +1,18 @@
 import random
-import logging
 
 class BullsAndCowsGame(object):
 
     def __init__(self):
-        self.secret = None
-        self.attempts = -1
         self.newGame()
 
-    def newGame(self, secret=None):
+    def newGame(self, secret=None, maxAttempts=10):
         if not secret:
             self.secret = str(random.randint(1000,9999))
         else:
             self.secret = secret
         self.secretList = list(self.secret)
-        self.attempts=0
+        self.attempts=1
+        self.maxAttemptsAllowed=maxAttempts
 
     def evaluate(self, guess):
         guessList = list(guess)
@@ -24,9 +22,9 @@ class BullsAndCowsGame(object):
         cowList=[]
         remainList=[]
         if len(guessList)!=4:
-            logging.error("Guess must contain exactly 4 numbers!")
-        if self.attempts<100:
-            logging.debug("Starting evaluation of guess %s"%guessList)
+            print("Guess must contain exactly 4 numbers!")
+            return None
+        if self.attempts<self.maxAttemptsAllowed:
             for index,value in enumerate(self.secretList):
                 if guessList[index]==value:
                     bulls+=1
@@ -39,7 +37,7 @@ class BullsAndCowsGame(object):
                         cows+=1
                         remainList.remove(number)
             if bulls == 4:
-                print("You win! Answer is %s. Attempts %s"%(self.secret,self.attempts+1))
+                print("You win! Answer is %s. Attempts %s"%(self.secret,self.attempts))
                 return (bulls,cows)
             else:
                 print("Bulls %s, Cows %s"%(bulls,cows))
@@ -50,12 +48,7 @@ class BullsAndCowsGame(object):
             print("The secret number was %s"%self.secret)
             return None
 
-def setLogger():
-    logging.basicConfig(level=0)
-
-
 if __name__=="__main__":
-    # setLogger()
     logging.info("Starting Game")
     game = BullsAndCowsGame()
     import pdb
