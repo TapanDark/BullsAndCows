@@ -24,6 +24,7 @@ class BullsAndCowsPlayer(object):
         if not self.foundAllDigits:
             if self.repeatedDigits:
                 logging.debug("Repeated Digits! Trying digits from %s"%self.presentDigitsSet)
+                # TODO: Need logic that will reduce presentDigitsSet
                 while 'X' in guess:
                     guess = guess.replace('X',next(iter(self.presentDigitsSet)),1)
             else:
@@ -54,7 +55,7 @@ class BullsAndCowsPlayer(object):
         self.previousGuesses[guess]=result
         newPossibles = self._updatePossibles(result,guess)
         if not self.foundAllDigits:
-            self.calculatedPossibles = self._mergeMaskDicts(newPossibles)
+            self.calculatedPossibles = self._mergeMaskDicts(newPossibles,result)
             self.uniqueDigits+=result[0]+result[1]
             if self.uniqueDigits==4:
                 self.foundAllDigits = True
@@ -147,10 +148,10 @@ class BullsAndCowsPlayer(object):
         #     tempDict[self.guessSkeleton] = self.calculatedPossibles.pop(self.guessSkeleton,None)
         #     self.calculatedPossibles = tempDict
 
-        self.calculatedPossibles = self._mergeMaskDicts(newPossibles, combine=False)
+        self.calculatedPossibles = self._mergeMaskDicts(newPossibles, result, combine=False)
         return self.calculatedPossibles
 
-    def _mergeMaskDicts(self, newMaskedDict, combine=True):
+    def _mergeMaskDicts(self, newMaskedDict, result, combine=True):
         def getRelevantSubDict(word, maskedDict):
             returnDict = {}
             for key in maskedDict:
@@ -211,13 +212,8 @@ class BullsAndCowsPlayer(object):
                     tempList = combineLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
                 else:
                     tempList = filterLists(self.calculatedPossibles[key], relevantSubDict[relevantKey])
-                    while(True):
-                        try:
-                            logging.debug("Removing %s from %s"%(self.lastGuess,tempList))
-                            tempList.remove(self.lastGuess)
-                        except ValueError as e:
-                            logging.debug("Last guess %s not in list %s"%(self.lastGuess,tempList))
-                            break
+                    self._removeImpossibles(tempList, result)
+
                 if tempList:
                     if not newkey in resultMaskedDict:
                         resultMaskedDict[newkey] = []
@@ -229,6 +225,30 @@ class BullsAndCowsPlayer(object):
             return newMaskedDict
         else:
             return resultMaskedDict
+
+    def _removeImpossibles(self,tempList, result):
+        maxCommons = result[0] + result[1]
+        cowList=[]
+        remainList=[]
+        removeList= []
+        for number in tempList:
+            guessList = list(number)
+            commons=0
+            for value in list(self.lastGuess):
+                if value in guessList:
+                    if value!='X':
+                        commons+=1
+                        guessList.remove(value)
+            if commons>maxCommons:
+                removeList.append(number)
+        for number in removeList:
+            while(True):
+                try:
+                    logging.debug("Removing %s from %s"%(number,tempList))
+                    tempList.remove(number)
+                except ValueError as e:
+                    logging.debug("Last guess %s not in list %s"%(number,tempList))
+                    break
 
 if __name__ == '__main__':
     logging.basicConfig(level=0)
