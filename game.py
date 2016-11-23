@@ -25,7 +25,7 @@ class BullsAndCowsGame(object):
         remainList=[]
         if len(guessList)!=4:
             logging.error("Guess must contain exactly 4 numbers!")
-        if self.attempts<11:
+        if self.attempts<100:
             logging.debug("Starting evaluation of guess %s"%guessList)
             for index,value in enumerate(self.secretList):
                 if guessList[index]==value:
