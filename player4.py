@@ -18,6 +18,7 @@ class BullsAndCowsPlayer(object):
         self.foundAllDigits=False
         self.calculatedPossibles ={}
         self.presentDigitsSet = set()
+        self.presentDigitsGroups = []
 
     def guess(self):
         guess = self.guessSkeleton
@@ -52,6 +53,8 @@ class BullsAndCowsPlayer(object):
             guess = self.lastGuess
         if type(result)!= tuple or len(result)!=2:
             logging.error("Result must be a tuple of lenght 2!")
+        if result[0]+result[1] > 0:
+            self.presentDigitsGroups.append((result[0]+result[1],set(list(self.lastGuess))))
         self.previousGuesses[guess]=result
         newPossibles = self._getPossibles(result,guess)
         if not self.foundAllDigits:
