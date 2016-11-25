@@ -26,30 +26,23 @@ class BullsAndCowsPlayer(object):
         guess = self.guessSkeleton
         if not self.foundAllDigits:
             if self.repeatedDigits:
-                logging.debug("Repeated Digits! Repeat count atleast %s Trying digits from %s"%(self.repeatCount, self.presentDigitsSet))
+                logging.debug("Repeated Digits! Repeat count %s Trying digits from %s"%(self.repeatCount, self.presentDigitsSet))
                 # TODO: Need logic that will reduce presentDigitsSet
                 presentDigitsIterator = iter(self.presentDigitsSet)
                 repeatsGuessed=0
-                while True:
-                    if self.repeatCount >3:
-                        import pdb
-                        pdb.set_trace()
-                        raise Exception("CRITITCAL ERROR!")
-                    try:
-                        while True:
+                while True:  # GET RID OF GUESSED REPEAT LIST, ONLY ENSURE THAT SAME GUESS IS NOT REPEATED.
+                    while repeatsGuessed<self.repeatCount:
+                        try:
                             repeatDigit = next(presentDigitsIterator)
-                            if repeatDigit not in self.guessedRepeatList and repeatDigit in guess:
-                                break
-                        guess = guess.replace('X',repeatDigit,self.repeatCount)
-                        logging.debug("REPEAT REPLACING %s"% repeatDigit)
-                        self.guessedRepeatList.append(repeatDigit)
+                            if repeatDigit in guess:
+                                guess = guess.replace('X',repeatDigit,1)
+                                logging.debug("REPEAT REPLACING %s"% repeatDigit)
+                                repeatsGuessed+=1  
+                        except StopIteration as e:
+                            presentDigitsIterator = iter(self.presentDigitsSet)
+                    if guess!=self.lastGuess:
                         break
-                    except StopIteration as e:
-                        self.repeatCount +=1
-                        logging.debug("Repeat Count increasd to %s"%self.repeatCount)
-                        self.guessedRepeatList = []
-                        presentDigitsIterator = iter(self.presentDigitsSet)
-
+            
                 presentDigitsIterator = iter(self.presentDigitsSet)
                 while 'X' in guess:
                     digit = next(presentDigitsIterator)
@@ -73,12 +66,12 @@ class BullsAndCowsPlayer(object):
         else:
             logging.debug("Detected all digits!")
             logging.debug("Number of unique digits: %s"%self.uniqueDigits)
-            _ , self.guessSkeleton = max((len(self.calculatedPossibles[key]),key) for key in self.calculatedPossibles)  #  TODO: UPDATE THIS, PICK FROM LIST WHERE KEY HAS MAX BULLS
-            guess = self.calculatedPossibles[self.guessSkeleton][0]
-            self.guessSkeleton = guess # HACK
+            while True:
+                _ , self.guessSkeleton = max((len(self.calculatedPossibles[key]),key) for key in self.calculatedPossibles)  #  TODO: UPDATE THIS, PICK FROM LIST WHERE KEY HAS MAX BULLS
+                guess = self.calculatedPossibles[self.guessSkeleton][0]
         self.lastGuess = guess
         print("Guess: %s"%self.lastGuess)
-        if 'X' in guess:   #GIANT HACK
+        if 'X' in guess:   #GIANT DEBUG HACK
             import pdb
             pdb.set_trace()
         return self.lastGuess
@@ -96,7 +89,14 @@ class BullsAndCowsPlayer(object):
             self.calculatedPossibles = self._mergeMaskDicts(newPossibles,result)
             if not self.repeatedDigits:
                 self.uniqueDigits+=result[0]+result[1]
-            if self.uniqueDigits==4:
+            else:
+                if result[0]+result[1] + self.repeatCount ==4:
+                    self.foundAllDigits=True
+                    for key in self.calculatedPossibles:
+                        for number in self.calculatedPossibles[key]:
+                            if 'X' in number:
+                                self.calculatedPossibles[key].remove(number)
+            if self.uniqueDigits + self.repeatCount==4:
                 self.foundAllDigits = True
             elif self.triedAllDigits:
                 if not self.repeatedDigits:  # hack
@@ -191,7 +191,7 @@ class BullsAndCowsPlayer(object):
             try:
                 del self.calculatedPossibles[self.guessSkeleton]
             except KeyError:
-                logging.error("Cant delete key %s"%self.guessSkeleton)
+                logging.debug("Cant delete key %s"%self.guessSkeleton)
         # elif sum(c.isdigit() for c in self.guessSkeleton) <= result[0]:    #  TODO: NEED TO VERIFY THIS LOGIC!
         #     logging.debug("Found more bulls than are in skeleton! Must update all keys!")
         #     tempDict={}
